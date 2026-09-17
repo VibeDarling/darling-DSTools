@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Simple java_home stub for Darling
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -v|--version)
+            REQUESTED_VERSION="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+JVM_DIR="/Library/Java/JavaVirtualMachines"
+
+if [ ! -d "$JVM_DIR" ]; then
+    echo "Unable to find any JVMs matching version \"$REQUESTED_VERSION\"." >&2
+    exit 1
+fi
+
+# Find all JVMs
+JVMS=($(ls -d "$JVM_DIR"/*.jdk 2>/dev/null))
+
+if [ ${#JVMS[@]} -eq 0 ]; then
+    echo "Unable to find any JVMs matching version \"$REQUESTED_VERSION\"." >&2
+    exit 1
+fi
+
+# Just pick the first one for now (or match version if requested)
+for jvm in "${JVMS[@]}"; do
+    if [ -d "$jvm/Contents/Home" ]; then
+        echo "$jvm/Contents/Home"
+        exit 0
+    fi
+done
+
+echo "Unable to find any JVMs matching version \"$REQUESTED_VERSION\"." >&2
+exit 1

@@ -30,3 +30,8 @@ install(FILES
 
 	DESTINATION libexec/darling/usr/share/man/man8
 )
+
+install(PROGRAMS
+	java_home/java_home
+	DESTINATION libexec/darling/usr/libexec
+)
