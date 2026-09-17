@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
 #define GROUP_FILE "/private/etc/group"
 
@@ -71,42 +72,34 @@ void add_member(const char *user, const char *group) {
 }
 
 int main(int argc, char **argv) {
-    int i;
-    for (i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
-            if (strcmp(argv[i+1], "create") == 0) {
-                const char *gid = "0";
-                const char *name = argv[argc-1];
-                for (int j = 1; j < argc; j++) {
-                    if (strcmp(argv[j], "-i") == 0 && j + 1 < argc) {
-                        gid = argv[j+1];
-                    }
-                }
-                append_group(name, gid);
-                return 0;
-            }
-            if (strcmp(argv[i+1], "checkmember") == 0) {
-                const char *user = NULL;
-                const char *group = argv[argc-1];
-                for (int j = 1; j < argc; j++) {
-                    if (strcmp(argv[j], "-m") == 0 && j + 1 < argc) {
-                        user = argv[j+1];
-                    }
-                }
-                return check_member(user, group);
-            }
-            if (strcmp(argv[i+1], "edit") == 0) {
-                const char *user = NULL;
-                const char *group = argv[argc-1];
-                for (int j = 1; j < argc; j++) {
-                    if (strcmp(argv[j], "-a") == 0 && j + 1 < argc) {
-                        user = argv[j+1];
-                    }
-                }
-                add_member(user, group);
-                return 0;
-            }
+    int opt;
+    char *operation = NULL;
+    char *gid = "0";
+    char *user = NULL;
+    
+    while ((opt = getopt(argc, argv, "o:r:i:m:t:a:")) != -1) {
+        switch (opt) {
+            case 'o': operation = optarg; break;
+            case 'i': gid = optarg; break;
+            case 'm': user = optarg; break;
+            case 'a': user = optarg; break;
+            case 'r': // ignore note
+            case 't': // ignore type
+            default:
+                break;
         }
     }
+    
+    if (optind >= argc || !operation) return 0;
+    const char *group = argv[optind];
+    
+    if (strcmp(operation, "create") == 0) {
+        append_group(group, gid);
+    } else if (strcmp(operation, "checkmember") == 0) {
+        return check_member(user, group);
+    } else if (strcmp(operation, "edit") == 0) {
+        add_member(user, group);
+    }
+    
     return 0;
 }

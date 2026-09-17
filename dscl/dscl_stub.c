@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
 #define PASSWD_FILE "/private/etc/passwd"
 #define GROUP_FILE "/private/etc/group"
@@ -159,27 +160,65 @@ void update_group(const char *name, const char *attr, const char *value) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 4) return 0;
+    int read_flag = 0, create_flag = 0, append_flag = 0;
+    static struct option long_options[] = {
+        {"read",   no_argument, 0, 'r'},
+        {"create", no_argument, 0, 'c'},
+        {"append", no_argument, 0, 'a'},
+        {0, 0, 0, 0}
+    };
+
+    int opt, option_index = 0;
+
+    // We use getopt_long_only to parse -read, -create, -append anywhere before positional args
+    while ((opt = getopt_long_only(argc, argv, "rca", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'r': read_flag = 1; break;
+            case 'c': create_flag = 1; break;
+            case 'a': append_flag = 1; break;
+            case '?': break; // ignore unrecognized
+            default: break;
+        }
+    }
+
+    // In case they didn't use a dash (e.g. `dscl . create ...`), check positional arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "read") == 0) read_flag = 1;
+        if (strcmp(argv[i], "create") == 0) create_flag = 1;
+        if (strcmp(argv[i], "append") == 0) append_flag = 1;
+    }
+
+    // Extract path, attr, value from positional arguments
+    const char *path = NULL;
+    const char *attr = NULL;
+    const char *value = NULL;
     
-    const char *action = argv[2];
-    const char *path = argv[3];
-    const char *attr = argc > 4 ? argv[4] : NULL;
-    const char *value = argc > 5 ? argv[5] : NULL;
+    for (int i = optind; i < argc; i++) {
+        if (strcmp(argv[i], ".") == 0 || strcmp(argv[i], "read") == 0 || 
+            strcmp(argv[i], "create") == 0 || strcmp(argv[i], "append") == 0) {
+            continue;
+        }
+        if (!path) path = argv[i];
+        else if (!attr) attr = argv[i];
+        else if (!value) value = argv[i];
+    }
+
+    if (!path) return 0; // Not enough arguments
     
-    if (strcmp(action, "-read") == 0 || strcmp(action, "read") == 0) {
+    if (read_flag) {
         if (strncmp(path, "/Groups/", 8) == 0) {
             read_group(path + 8, attr);
         } else if (strncmp(path, "/Users/", 7) == 0) {
             read_user(path + 7, attr);
         }
-    } else if (strcmp(action, "-create") == 0 || strcmp(action, "create") == 0) {
+    } else if (create_flag) {
         if (strncmp(path, "/Users/", 7) == 0) {
             update_user(path + 7, attr, value);
         } else if (strncmp(path, "/Groups/", 8) == 0) {
             update_group(path + 8, attr, value);
         }
-    } else if (strcmp(action, "-append") == 0 || strcmp(action, "append") == 0) {
-        // Nix might use -append for groups, we handle it in dseditgroup mostly
+    } else if (append_flag) {
+        // Nix handles group append via dseditgroup, but we can stub it out if needed
     }
     return 0;
 }
