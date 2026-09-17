@@ -4,10 +4,11 @@ add_compile_options(
 	-nostdinc
 )
 
-#add_darling_executable(dsmemberutil dsmbrutil/dsmbrutil.c)
+add_darling_executable(dseditgroup ugtools/dseditgroup_stub.c)
+install(TARGETS dseditgroup DESTINATION libexec/darling/usr/sbin)
 
-# Disabling in favor of stub
-#install(TARGETS dsmemberutil DESTINATION libexec/darling/usr/bin)
+add_darling_executable(dscl dscl/dscl_stub.c)
+install(TARGETS dscl DESTINATION libexec/darling/usr/bin)
 
 install(FILES
 	dirt/dirt.1
